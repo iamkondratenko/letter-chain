@@ -28,7 +28,9 @@
             grid-template-rows: repeat(8, 50px);
             gap: 2px;
             justify-content: center;
-            margin-bottom: 20px;
+            width: fit-content;
+            margin: 30px auto;
+            background: #fff;
         }
 
         #board div {
@@ -90,22 +92,29 @@
     <div class="container">
         <h1>LetterChain Game</h1>
         <div>
-            <label for="num-players">Number of Players (1-8):</label>
-            <input type="number" id="num-players" min="1" max="8" value="1">
+            <label for="num-players">Play with bot</label>
+            <input type="checkbox" id="num-players">
+            <select id="pattern-length">
+                <option value="2">2 буквы</option>
+                <option value="3">3 буквы</option>
+                <option value="4" selected>4 буквы</option>
+            </select>
         </div>
-        <div>
+        <!-- <div>
             <label for="board-size">Board Size (e.g. 8 for 8x8):</label>
             <input type="number" id="board-size" min="4" value="8">
-        </div>
+        </div> -->
         <button onclick="startGame()" id="start-game">Start Game</button>
-        <div id="board"></div>
+        <div id="board">
+        </div>
         <div class="controls">
             <input type="text" id="word-input" autocomplete="off" spellcheck="false" placeholder="Enter your word">
             <button onclick="submitWord()">Submit</button>
+            <button onclick="botFindWord(currentWord)">Bot's tip</button>
         </div>
-        <p id="explanation"></p>  <!-- Area for word explanation -->
         <p id="message"></p>
         <p id="scoreboard"></p>
+        <p id="explanation"></p>
     </div>
 
 
@@ -144,8 +153,8 @@
         function startGame() {
             document.getElementById('word-input').disabled = false;  // Enable input
             input.focus();  // Focus on input
-            const numPlayers = parseInt(document.getElementById('num-players').value);
-            boardSize = parseInt(document.getElementById('board-size').value);
+            const numPlayers = document.getElementById('num-players').checked ? 2 : 1;
+            boardSize = 8;
         
             // Initialize board and scores
             board = Array(boardSize * boardSize).fill("");
@@ -166,9 +175,17 @@
         }
         
         function generateRandomWord() {
-            const words = ["apple", "lemon", "onion", "grape", "peach", "plum", "berry"];
-            return words[Math.floor(Math.random() * words.length)];
+            const words = Object.keys(dictionary);  // Получаем массив всех слов из словаря
+            const randomWord = words[Math.floor(Math.random() * words.length)];  // Выбираем случайное слово
+            const wordDefinition = dictionary[randomWord];  // Получаем определение слова
+        
+            // Выводим определение на экран
+            const explanationArea = document.getElementById('explanation');
+            explanationArea.textContent = `Определение: ${randomWord} — ${wordDefinition}`;
+        
+            return randomWord;  // Возвращаем случайное слово
         }
+        
         
         function placeWordOnBoard(word, startIndex) {
             for (let i = 0; i < word.length; i++) {
@@ -231,6 +248,13 @@
             }
         
             input.focus();  // Focus on input
+            
+
+
+            if (currentPlayer == 1) {
+                botPlay(currentWord);
+
+            }
         }
         
         document.addEventListener('keydown', function(event) {
@@ -287,6 +311,78 @@
             input.value = '';  // Clear input field
             input.focus();  // Focus back on the input
         }
+
+
+
+
+        function botFindWord(lastWord) {
+            const words = Object.keys(dictionary);  // Получаем массив всех слов из словаря
+                let patternLength = parseInt(document.getElementById('pattern-length').value);
+
+        
+            while (patternLength > 0) {
+                const pattern = lastWord.slice(-patternLength);  // Берем последние N букв
+                const matchingWords = words.filter(word => word.startsWith(pattern));  // Ищем все слова, которые начинаются с этого паттерна
+        
+                if (matchingWords.length > 0) {
+                    // Если найдены совпадения, выбираем случайное слово
+                    const randomWord = matchingWords[Math.floor(Math.random() * matchingWords.length)];
+                    const wordDefinition = dictionary[randomWord];  // Получаем определение слова
+        
+                    // Выводим слово и его определение
+                    const explanationArea = document.getElementById('explanation');
+                    explanationArea.textContent = `Бот выбрал слово: ${randomWord} — ${wordDefinition}`;
+        
+                    return randomWord;  // Возвращаем найденное слово
+                }
+        
+                patternLength--;  // Уменьшаем длину паттерна
+            }
+        
+            // Если подходящее слово не найдено, можно вернуть сообщение об этом или пустую строку
+            document.getElementById('explanation').textContent = "Бот не нашел подходящее слово.";
+            return "";
+        }
+
+        function botPlay(lastWord) {
+            const words = Object.keys(dictionary);  // Получаем массив всех слов из словаря
+            let patternLength = parseInt(document.getElementById('pattern-length').value);
+        
+            while (patternLength > 0) {
+                const pattern = lastWord.slice(-patternLength);  // Берем последние N букв
+                const matchingWords = words.filter(word => word.startsWith(pattern));  // Ищем все слова, которые начинаются с этого паттерна
+        
+                if (matchingWords.length > 0) {
+                    // Если найдены совпадения, выбираем случайное слово
+                    const randomWord = matchingWords[Math.floor(Math.random() * matchingWords.length)];
+                    const wordDefinition = dictionary[randomWord];  // Получаем определение слова
+        
+                   
+
+
+
+                       function botTurn() {
+                            input.value = randomWord;
+                            submitWord();
+                            // Выводим слово и его определение
+                            const explanationArea = document.getElementById('explanation');
+                            explanationArea.textContent = `Бот выбрал слово: ${randomWord} — ${wordDefinition}`;
+                        }
+
+                        // Call botPlay function after 2 seconds (2000 milliseconds)
+                        setTimeout(botTurn, 2000);
+        
+                    return randomWord;  // Возвращаем найденное слово
+                }
+        
+                patternLength--;  // Уменьшаем длину паттерна
+            }
+        
+            // Если подходящее слово не найдено, можно вернуть сообщение об этом или пустую строку
+            document.getElementById('explanation').textContent = "Бот не нашел подходящее слово.";
+            return "";
+        }
+        
         
         
     </script>
