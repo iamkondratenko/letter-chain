@@ -80,7 +80,7 @@
             <label for="board-size">Board Size (e.g. 8 for 8x8):</label>
             <input type="number" id="board-size" min="4" value="8">
         </div>
-        <button onclick="startGame()" disabled>Start Game</button>
+        <button onclick="startGame()" id="start-game" disabled>Start Game</button>
         <div id="board"></div>
         <div class="controls">
             <input type="text" id="word-input" autocomplete="off" spellcheck="false" placeholder="Enter your word">
@@ -108,11 +108,12 @@
 
         function loadDictionary() {
             fetch('dictionary.json')
-                .then(response => response.json(), console.log('response'))
+                .then(response => response.json(), document.querySelector('#start-game').textContent = 'Loading...')
                 .then(data => {
                     dictionary = data;
                     console.log('load')
-                    document.querySelector('onclick="startGame()"').disabled = false;
+                    document.querySelector('#start-game').disabled = false;
+                    document.querySelector('#start-game').textContent = 'Start Game';
                 })
                 
                 .catch(error => console.error('Error loading dictionary:', error));
