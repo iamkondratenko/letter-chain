@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WordChain Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            margin: 50px auto;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(8, 50px);
+            grid-template-rows: repeat(8, 50px);
+            gap: 2px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        #board div {
+            background-color: #fff;
+            border: 1px solid #000;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+        }
+
+        #word-input {
+            padding: 10px;
+            font-size: 1.2em;
+            width: 200px;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1.2em;
+        }
+
+        #message {
+            font-size: 1.2em;
+            color: red;
+        }
+
+        #scoreboard {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WordChain Game</h1>
+        <div>
+            <label for="num-players">Number of Players (1-8):</label>
+            <input type="number" id="num-players" min="1" max="8" value="1">
+        </div>
+        <div>
+            <label for="board-size">Board Size (e.g. 8 for 8x8):</label>
+            <input type="number" id="board-size" min="4" value="8">
+        </div>
+        <button onclick="startGame()">Start Game</button>
+        <div id="board"></div>
+        <div class="controls">
+            <input type="text" id="word-input" autocomplete="off" spellcheck="false" placeholder="Enter your word">
+            <button onclick="submitWord()">Submit</button>
+        </div>
+        <p id="explanation"></p>  <!-- Area for word explanation -->
+        <p id="message"></p>
+        <p id="scoreboard"></p>
+    </div>
+
+
+    <script>
+        let boardSize = 8;  // Default size
+        let board = [];
+        let currentWord = "";
+        let wordsUsed = [];
+        let currentIndex = 0;
+        let currentPlayer = 0;
+        let scores = [];
+        let gameEnded = false;
+        const input = document.getElementById('word-input');
+        let dictionary = {};
+        
+        function loadDictionary() {
+            fetch('dictionary.json')
+                .then(response => response.json())
+                .then(data => {
+                    dictionary = data;
+                })
+                .catch(error => console.error('Error loading dictionary:', error));
+        }
+        
+        function startGame() {
+            document.getElementById('word-input').disabled = false;  // Enable input
+            input.focus();  // Focus on input
+            const numPlayers = parseInt(document.getElementById('num-players').value);
+            boardSize = parseInt(document.getElementById('board-size').value);
+        
+            // Initialize board and scores
+            board = Array(boardSize * boardSize).fill("");
+            scores = Array(numPlayers).fill(0);
+            currentWord = generateRandomWord();
+            wordsUsed = [currentWord];
+            currentIndex = 0;
+            currentPlayer = 0;
+            gameEnded = false;
+        
+            // Place the first word at the top-left corner
+            placeWordOnBoard(currentWord, currentIndex);
+            updateBoard();
+            updateScores();
+            document.getElementById('message').textContent = `Player ${currentPlayer + 1}'s turn.`;
+        
+            loadDictionary();  // Load the dictionary
+        }
+        
+        function generateRandomWord() {
+            const words = ["apple", "lemon", "onion", "grape", "peach", "plum", "berry"];
+            return words[Math.floor(Math.random() * words.length)];
+        }
+        
+        function placeWordOnBoard(word, startIndex) {
+            for (let i = 0; i < word.length; i++) {
+                let position = (startIndex + i) % (boardSize * boardSize);
+                board[position] = word[i];
+            }
+            currentIndex += word.length;  // Update index for next word
+        }
+        
+        function updateBoard() {
+            const boardDiv = document.getElementById('board');
+            boardDiv.innerHTML = '';
+            
+            board.forEach(letter => {
+                const cell = document.createElement('div');
+                cell.textContent = letter;
+                boardDiv.appendChild(cell);
+            });
+        }
+        
+        function submitWord() {
+            const newWord = input.value.toLowerCase().trim();
+
+            
+            if (validateWord(newWord) && checkDictionary() == true) {
+
+                console.log(checkDictionary());
+                wordsUsed.push(newWord);
+                let lastWord = currentWord;
+                const overlap = findOverlap(lastWord, newWord);
+        
+                let points = overlap * 2 + (newWord.length - overlap);  // 2 points for overlapping letters, 1 point for new letters
+                if (currentIndex + newWord.length > board.length) {
+                    const excessLength = (currentIndex + newWord.length) - board.length;
+                    points -= excessLength;  // Deduct points for excess letters
+                    if (points == newWord.length) {
+                        points += 8;
+                    }
+                }
+                scores[currentPlayer] += points;  // Update current player's score
+                
+                placeWordOnBoard(newWord.substring(overlap), currentIndex);
+                
+                // Update current player
+                currentPlayer = (currentPlayer + 1) % scores.length;
+                currentWord = newWord;  // Update current word
+                
+                updateBoard();
+                updateScores();
+                input.value = '';
+                
+                // Check if the game has ended
+                if (currentIndex >= board.length) {
+                    endGame();
+                } else {
+                    document.getElementById('message').textContent = `Player ${currentPlayer + 1}'s turn.`;
+                }
+            } else {
+                document.getElementById('message').textContent = "Invalid word or word already used!";
+            }
+        
+            input.focus();  // Focus on input
+        }
+        
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                submitWord();
+            }
+        });
+        
+        function validateWord(word) {
+            let lastWord = currentWord;
+            let overlap = findOverlap(lastWord, word);
+            return overlap > 0 && !wordsUsed.includes(word);
+        }
+        
+        function findOverlap(lastWord, newWord) {
+            for (let i = 0; i < lastWord.length; i++) {
+                if (newWord.startsWith(lastWord.slice(i))) {
+                    return lastWord.length - i;
+                }
+            }
+            return 0;
+        }
+        
+        function updateScores() {
+            const scoreBoard = document.getElementById('scoreboard');
+            scoreBoard.innerHTML = '<h2>Scores:</h2>';
+            scores.forEach((score, index) => {
+                const scoreItem = document.createElement('p');
+                scoreItem.textContent = `Player ${index + 1}: ${score}`;
+                scoreBoard.appendChild(scoreItem);
+            });
+        }
+        
+        function endGame() {
+            gameEnded = true;
+            const winnerIndex = scores.indexOf(Math.max(...scores));
+            const winnerScore = scores[winnerIndex];
+            document.getElementById('message').textContent = `Game over! Player ${winnerIndex + 1} wins with ${winnerScore} points!`;
+            document.getElementById('word-input').disabled = true;  // Disable input
+        }
+        
+        function checkDictionary() {
+            const wordToCheck = input.value.toLowerCase().trim();
+            const explanationArea = document.getElementById('explanation');
+        
+            if (dictionary[wordToCheck]) {
+                explanationArea.textContent = `Definition: ${dictionary[wordToCheck]}`;
+                return true
+            } else {
+                explanationArea.textContent = "This word does not exist in the dictionary.";
+                return false
+            }
+        
+            input.value = '';  // Clear input field
+            input.focus();  // Focus back on the input
+        }
+        
+        
+    </script>
+</body>
+</html>
