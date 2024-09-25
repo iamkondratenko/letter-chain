@@ -67,11 +67,28 @@
         #scoreboard {
             margin-top: 20px;
         }
+
+        #loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            backdrop-filter: blur(3px);
+        }
     </style>
 </head>
 <body>
+    <div id="loading">Loading dictionary...</div>
     <div class="container">
-        <h1>WordChain Game</h1>
+        <h1>LetterChain Game</h1>
         <div>
             <label for="num-players">Number of Players (1-8):</label>
             <input type="number" id="num-players" min="1" max="8" value="1">
@@ -80,7 +97,7 @@
             <label for="board-size">Board Size (e.g. 8 for 8x8):</label>
             <input type="number" id="board-size" min="4" value="8">
         </div>
-        <button onclick="startGame()" id="start-game" disabled>Start Game</button>
+        <button onclick="startGame()" id="start-game">Start Game</button>
         <div id="board"></div>
         <div class="controls">
             <input type="text" id="word-input" autocomplete="off" spellcheck="false" placeholder="Enter your word">
@@ -108,12 +125,11 @@
 
         function loadDictionary() {
             fetch('dictionary.json')
-                .then(response => response.json(), document.querySelector('#start-game').textContent = 'Loading...')
+                .then(response => response.json())
                 .then(data => {
                     dictionary = data;
                     console.log('load')
-                    document.querySelector('#start-game').disabled = false;
-                    document.querySelector('#start-game').textContent = 'Start Game';
+                    document.querySelector('#loading').style.display = 'none';
                 })
                 
                 .catch(error => console.error('Error loading dictionary:', error));
