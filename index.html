@@ -106,12 +106,20 @@
         
         function loadDictionary() {
             fetch('dictionary.json')
-                .then(response => response.json())
+                .then(response => response.json(), console.log('response'))
                 .then(data => {
                     dictionary = data;
+                    console.log('load')
                 })
+                
                 .catch(error => console.error('Error loading dictionary:', error));
+
+                
         }
+
+
+
+        loadDictionary();  // Load the dictionary
         
         function startGame() {
             document.getElementById('word-input').disabled = false;  // Enable input
@@ -134,7 +142,7 @@
             updateScores();
             document.getElementById('message').textContent = `Player ${currentPlayer + 1}'s turn.`;
         
-            loadDictionary();  // Load the dictionary
+            
         }
         
         function generateRandomWord() {
